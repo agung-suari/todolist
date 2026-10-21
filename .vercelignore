@@ -1,0 +1,7 @@
+.env*
+!.env.example
+.agents
+.codex
+.git
+.next
+node_modules
