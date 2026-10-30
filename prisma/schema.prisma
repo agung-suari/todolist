@@ -1,38 +1,31 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+import "server-only";
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../../generated/prisma/client";
 
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+function createPrismaClient() {
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL belum diatur. Periksa file .env"
+    );
+  }
+
+  const adapter = new PrismaPg({
+    connectionString,
+  });
+
+  return new PrismaClient({ adapter });
 }
 
-datasource db {
-  provider = "postgresql"
-}
-model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+export const prisma =
+  globalForPrisma.prisma ?? createPrismaClient();
 
-  tasks Task[]
-}
-
-model Task {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String?
-  category    String   @default("Pribadi")
-  completed   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
